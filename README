@@ -1,0 +1,20 @@
+# Simple Provenance gRPC Client
+
+A simple Go command-line application that demonstrates how to connect to a Provenance blockchain gRPC endpoint to query on-chain data.
+
+## Features
+
+-   Connects to the Provenance testnet gRPC endpoint (`grpc.test.provenance.io:443`).
+-   Queries the bank balance for a specific account address.
+-   Queries marker details for a specific marker denom (`nhash`).
+
+## Prerequisites
+
+-   Go (version 1.18 or higher is recommended).
+
+## Setup
+
+1.  Clone the repository or save the `main.go` file in a new directory.
+
+2.  Navigate into the project directory and install the required Go modules:
+    

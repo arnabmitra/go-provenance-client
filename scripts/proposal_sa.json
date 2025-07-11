@@ -1,0 +1,17 @@
+{
+  "messages": [
+    {
+      "@type": "/provenance.smartaccounts.v1.MsgUpdateParams",
+      "authority": "tp10d07y265gmmuvt4z0w9aw880jnsr700jq8ave9",
+      "params": {
+        "enabled": true,
+        "max_credential_allowed": 10
+      }
+    }
+  ],
+  "metadata": "ipfs://CID",
+  "deposit": "10000000000nhash",
+  "title": "Enable Smart Accounts Module",
+  "summary": "Proposal to enable the smart accounts module functionality",
+  "expedited": false
+}
