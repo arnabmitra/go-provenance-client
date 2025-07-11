@@ -17,4 +17,4 @@ A simple Go command-line application that demonstrates how to connect to a Prove
 1.  Clone the repository or save the `main.go` file in a new directory.
 
 2.  Navigate into the project directory and install the required Go modules:
-    
+
