@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"cosmossdk.io/math"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -64,13 +65,72 @@ func broadcastTx() error {
 	)
 	defer grpcConn.Close()
 
-	txBuilder.SetGasLimit(2000000)
-	txBuilder.SetFeeAmount(sdk.NewCoins(sdk.NewInt64Coin("nhash", 38400000000)))
-	// Get account number and sequence dynamically
+	// Broadcast the tx via gRPC. We create a new client for the Protobuf Tx service.
+	clientCtx := context.Background()
+	txSvcClient := txservice.NewServiceClient(grpcConn)
+
+	// Get account number and sequence dynamically. This is needed for both simulation and signing.
 	accNum, accSeq, err := temp_util.GetAccountInfo(grpcConn, addr, encCfg.Codec)
 	if err != nil {
 		return err
 	}
+
+	// To simulate a transaction, we need to build a temporary transaction with a dummy signature.
+	// The signature doesn't need to be valid; it just needs to be present with the correct public key
+	// and sequence number for the simulation to accurately estimate gas costs.
+	simSigV2 := signing.SignatureV2{
+		PubKey: pub,
+		Data: &signing.SingleSignatureData{
+			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+			Signature: nil, // A nil signature is a valid dummy signature.
+		},
+		Sequence: accSeq,
+	}
+	if err := txBuilder.SetSignatures(simSigV2); err != nil {
+		return fmt.Errorf("failed to set dummy signature for simulation: %w", err)
+	}
+
+	// Encode the transaction with the dummy signature for the simulation request.
+	simTxBytes, err := encCfg.TxConfig.TxEncoder()(txBuilder.GetTx())
+	if err != nil {
+		return fmt.Errorf("failed to encode tx for simulation: %w", err)
+	}
+
+	// Run the simulation.
+	simRes, err := txSvcClient.Simulate(
+		context.Background(),
+		&txservice.SimulateRequest{
+			TxBytes: simTxBytes,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("transaction simulation failed: %w", err)
+	}
+
+	// We'll use the simulated gas used and add a buffer (e.g., 50%) to get our gas limit.
+	// This helps prevent "out of gas" errors if the real execution uses slightly more gas.
+	const gasAdjustment = 1.5
+	gasLimit := uint64(float64(simRes.GasInfo.GasUsed) * gasAdjustment)
+
+	// Define the gas price. This could be a constant or fetched from chain params.
+	// For Provenance, a common gas price is 1905nhash.
+	gasPrice, err := sdk.ParseCoinNormalized("1nhash")
+	if err != nil {
+		return fmt.Errorf("failed to parse gas price: %w", err)
+	}
+
+	// Calculate the fee by multiplying the gas limit by the gas price.
+	feeAmount := gasPrice.Amount.Mul(math.NewInt(int64(gasLimit)))
+	fees := sdk.NewCoins(sdk.NewCoin(gasPrice.Denom, feeAmount))
+
+	fmt.Printf("Dynamic Estimation Complete:\n")
+	fmt.Printf("  - Gas Used (Simulated): %d\n", simRes.GasInfo.GasUsed)
+	fmt.Printf("  - Gas Limit (%.2fx buffer): %d\n", gasAdjustment, gasLimit)
+	fmt.Printf("  - Fee Calculated: %s\n", fees.String())
+
+	// Now, set the dynamically estimated gas limit and fee on the transaction builder.
+	txBuilder.SetGasLimit(gasLimit)
+	txBuilder.SetFeeAmount(fees)
 
 	privs := []cryptotypes.PrivKey{privKey}
 	accNums := []uint64{accNum}
@@ -142,9 +202,6 @@ func broadcastTx() error {
 	txJSON := string(txJSONBytes)
 	fmt.Printf("the txJSON is %s\n", txJSON)
 
-	// Broadcast the tx via gRPC. We create a new client for the Protobuf Tx service.
-	clientCtx := context.Background()
-	txSvcClient := txservice.NewServiceClient(grpcConn)
 	grpcRes, err := txSvcClient.BroadcastTx(
 		clientCtx,
 		&txservice.BroadcastTxRequest{

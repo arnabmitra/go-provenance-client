@@ -1,6 +1,6 @@
 #!/bin/bash
 x=1
-PROVENANCE_DEV_DIR=~/provenance-priv
+PROVENANCE_DEV_DIR=~/provenance
 # Check if ownermarker key already exists before adding
 if ! ${PROVENANCE_DEV_DIR}/build/provenanced -t --home ${PROVENANCE_DEV_DIR}/build/run keys show ownermarker --keyring-backend test > /dev/null 2>&1; then
     ${PROVENANCE_DEV_DIR}/build/provenanced -t --home ${PROVENANCE_DEV_DIR}/build/run keys add ownermarker --recover --hd-path "44'/1'/0'/0/0'" --keyring-backend test < ./mnemonics/ownermarker.txt
@@ -20,7 +20,7 @@ do
   10000000000000nhash \
   --from validator \
   --home ${PROVENANCE_DEV_DIR}/build/run/provenanced \
-  --keyring-backend test --chain-id testing --gas auto --gas-adjustment 1.4  --gas-prices 1905nhash  \
+  --keyring-backend test --chain-id testing --gas auto --gas-adjustment 1.4  --gas-prices 1nhash  \
   --testnet --yes -o json --broadcast-mode sync| jq -r '.txhash')
   x=$(( x+1 ))
 

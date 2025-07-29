@@ -1,6 +1,6 @@
 #!/bin/bash
 x=1
-PROVENANCE_DEV_DIR=~/provenance-priv
+PROVENANCE_DEV_DIR=~/provenance
 
 COMMON_TX_FLAGS="--gas auto --gas-adjustment 2 --chain-id chain-local --keyring-backend test --yes -o json"
 
@@ -9,7 +9,7 @@ COMMON_TX_FLAGS="--gas auto --gas-adjustment 2 --chain-id chain-local --keyring-
  tx_hash=$(${PROVENANCE_DEV_DIR}/build/provenanced tx gov submit-proposal ./proposal_sa.json \
   --from validator \
   --home ${PROVENANCE_DEV_DIR}/build/run/provenanced \
-  --keyring-backend test --chain-id testing --gas auto --gas-adjustment 1.4  --gas-prices 1905nhash  \
+  --keyring-backend test --chain-id testing --gas auto --gas-adjustment 1.4  --gas-prices 1nhash  \
   --testnet --yes -o json --broadcast-mode sync| jq -r '.txhash')
   x=$(( x+1 ))
 
